@@ -815,7 +815,7 @@ def _sync_single_playlist_to_youtube(
                 break
 
     except HttpError as e:
-        if "quotaExceeded" in str(e) or (hasattr(e, "resp") and e.resp.status == 403):
+        if "quotaExceeded" in str(e):
             print(f"\n[!] YouTube API daily quota limit reached while reading playlist '{playlist_name}'.")
             op_name = f"push [{section_title}]" if section_title else "push"
             record_activity(playlist_data, effective_log_name, op_name + " (quota exceeded)")
@@ -832,7 +832,15 @@ def _sync_single_playlist_to_youtube(
                 playlist_data=playlist_data
             )
             return False, {}
-        print(f"[!] YouTube API Error while fetching current playlist '{playlist_name}': {e}")
+
+        print(f"\n[!] YouTube API Error while fetching current playlist '{playlist_name}': {e}")
+        if "insufficientPermissions" in str(e) or "insufficient authentication scopes" in str(e).lower():
+            print("\n" + "=" * 65)
+            print(" [!] PERMISSION ERROR: Missing YouTube Access Permissions")
+            print("=" * 65)
+            print("  Google returned 'Insufficient Permission'. This happens when the")
+            print("  account did not check the YouTube permission box on the consent screen.")
+            print("=" * 65 + "\n")
         return False, {}
 
     current_items.sort(key=lambda x: x["position"])
