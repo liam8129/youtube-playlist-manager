@@ -226,6 +226,19 @@ def _prompt_for_account(client_name, cached):
         print(f"[!] Invalid selection '{choice}'.")
 
 
+def _verify_token_has_youtube_scope(creds):
+    """Verifies with Google whether this token was granted YouTube permissions."""
+    try:
+        session = google.auth.transport.requests.AuthorizedSession(creds)
+        resp = session.get(f"https://oauth2.googleapis.com/tokeninfo?access_token={creds.token}", timeout=10)
+        if resp.status_code == 200:
+            scopes = resp.json().get("scope", "")
+            return "youtube" in scopes
+    except Exception:
+        pass
+    return True
+
+
 def _load_cached_credentials(client_name, account):
     """Loads and (if needed) refreshes the cached token. Returns valid creds or None."""
     token_path = get_token_path(client_name, account)
@@ -239,7 +252,18 @@ def _load_cached_credentials(client_name, account):
             print(f"[+] Refreshed cached login for {account} ('{client_name}').")
         elif creds.valid:
             print(f"[+] Using cached login for {account} ('{client_name}').")
-        return creds if creds.valid else None
+
+        if creds.valid:
+            if not _verify_token_has_youtube_scope(creds):
+                print(f"[!] Warning: Cached login for {account} does NOT have YouTube permissions.")
+                print(f"    (The YouTube permission checkbox was not checked during login).")
+                try:
+                    os.remove(token_path)
+                except OSError:
+                    pass
+                return None
+            return creds
+        return None
     except Exception as e:
         print(f"[*] Cached login for {account} could not be refreshed ({e}). Re-authorizing...")
         return None
@@ -250,12 +274,32 @@ def _browser_login(client_name, secret_file, login_hint=None):
     print(f"[*] Using oauth client '{client_name}': '{secret_file}'")
     if login_hint:
         print(f"[*] Expected Google account: {login_hint}")
+    print("\n" + "=" * 65)
+    print(" [!] IMPORTANT: ACTION REQUIRED IN BROWSER")
+    print("=" * 65)
+    print(" When Google's authorization screen opens in your browser:")
+    print("   1. Click 'Advanced' -> 'Go to ... (unsafe)' if unverified.")
+    print("   2. You MUST check the checkbox:")
+    print("      [✓] 'See, edit, and permanently delete your YouTube videos...'")
+    print("   3. Click 'Continue'.")
+    print(" If you leave that box unchecked, YouTube will reject all edits!")
+    print("=" * 65 + "\n")
     print("[*] Launching browser for Google OAuth authorization...")
-    print("    (Please log in and grant YouTube permissions in your browser window...)")
     flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(secret_file, SCOPES)
     kwargs = {"login_hint": login_hint, "prompt": "consent"} if login_hint else {"prompt": "select_account consent"}
     creds = flow.run_local_server(port=0, **kwargs)
-    print("[+] OAuth authentication successful!")
+
+    if not _verify_token_has_youtube_scope(creds):
+        print("\n" + "=" * 65)
+        print(" [!] ERROR: YouTube permissions were NOT granted during Google login!")
+        print("=" * 65)
+        print(" The checkbox for YouTube permissions was left UNCHECKED in your browser.")
+        print(" Google only granted email/profile access, so playlist edits cannot be pushed.")
+        print(" Please run the command again and be sure to check the YouTube checkbox.")
+        print("=" * 65 + "\n")
+        sys.exit(1)
+
+    print("[+] OAuth authentication successful (YouTube permissions verified)!")
     return creds
 
 
