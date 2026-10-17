@@ -7,7 +7,7 @@ import os
 
 from .config import VERSION, PLAYLISTS_DIR
 from .auth import get_oauth_clients
-from .parser import sanitize_filename
+from .parser import sanitize_filename, get_playlist_file_path
 
 
 def terminal_link(text, url):
@@ -23,8 +23,7 @@ def show_menu(settings, playlist_data, parser=None):
     # Filter out playlists whose local text file does not exist on disk
     visible_playlists = {
         name: pid for name, pid in playlists.items()
-        if os.path.isfile(os.path.join(PLAYLISTS_DIR, f"{name}.txt")) or
-           os.path.isfile(os.path.join(PLAYLISTS_DIR, f"{sanitize_filename(name)}.txt"))
+        if os.path.isfile(get_playlist_file_path(name))
     }
 
     print("\n" + "=" * 70)
@@ -73,8 +72,7 @@ def show_menu(settings, playlist_data, parser=None):
                     last_edit_str = "None recorded"
 
                 sec_str = ""
-                safe_n = sanitize_filename(p_name)
-                fpath = os.path.join(PLAYLISTS_DIR, f"{safe_n}.txt")
+                fpath = get_playlist_file_path(p_name)
                 if os.path.isfile(fpath):
                     try:
                         from .parser import parse_playlist_file
