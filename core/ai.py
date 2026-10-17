@@ -36,6 +36,7 @@ from .parser import (
     parse_header_line,
     _format_playlist_entry_line,
     _playlist_name_from_file_path,
+    get_playlist_file_path,
 )
 from .downloader import (
     find_missing_metadata,
@@ -606,14 +607,13 @@ def command_ai_format(args, settings, playlist_data):
     """
     target_name = args.target.strip()
     playlist_name = get_playlist_name_for_target(target_name, playlist_data)
-    safe_name = sanitize_filename(playlist_name)
-    file_path = os.path.join(PLAYLISTS_DIR, f"{safe_name}.txt")
+    pl_settings = load_playlist_settings(playlist_name)
+    file_path = get_playlist_file_path(playlist_name, pl_settings)
 
     if not os.path.exists(file_path):
         print(f"[!] Error: Local file '{file_path}' does not exist.")
         return
 
-    pl_settings = load_playlist_settings(playlist_name)
     entry_format = pl_settings.get("playlist_entry_format")
     clickable_links = settings.get("clickable_links_in_playlist_files", False)
 

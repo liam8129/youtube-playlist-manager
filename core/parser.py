@@ -29,7 +29,60 @@ _RESERVED_PLAYLIST_IDS = {"WL", "LL", "HL"}
 _PLAYLIST_URL_HOSTS = {"youtube.com", "www.youtube.com", "music.youtube.com", "m.youtube.com"}
 
 
+def get_playlist_file_path(playlist_name, pl_settings=None):
+    """
+    Resolves the local playlist .txt file path.
+    Checks:
+      1. 'playlist_file_path' (or 'playlist_file' / 'playlist_path') in playlist settings
+      2. playlists/<playlist_name>.txt or playlists/<sanitized_name>.txt
+    """
+    if pl_settings is None:
+        try:
+            from .config import load_playlist_settings
+            pl_settings = load_playlist_settings(playlist_name)
+        except Exception:
+            pl_settings = {}
+
+    custom_path = (
+        pl_settings.get("playlist_file_path") or
+        pl_settings.get("playlist_file") or
+        pl_settings.get("playlist_path") or
+        ""
+    ).strip()
+
+    if custom_path:
+        expanded = os.path.expanduser(custom_path)
+        # If directory was provided instead of a file, append the playlist text filename
+        if os.path.isdir(expanded) or (not expanded.lower().endswith(".txt") and not os.path.splitext(expanded)[1]):
+            safe_name = sanitize_filename(playlist_name)
+            return os.path.normpath(os.path.join(expanded, f"{safe_name}.txt"))
+        return os.path.normpath(expanded)
+
+    safe_name = sanitize_filename(playlist_name)
+    candidates = [
+        os.path.join(PLAYLISTS_DIR, f"{playlist_name}.txt"),
+        os.path.join(PLAYLISTS_DIR, f"{safe_name}.txt"),
+    ]
+    for c in candidates:
+        if os.path.isfile(c):
+            return os.path.normpath(c)
+    return os.path.normpath(candidates[0])
+
+
 def _playlist_name_from_file_path(file_path):
+    if not file_path:
+        return ""
+    try:
+        from .config import load_all_playlist_settings
+        norm = os.path.normpath(os.path.abspath(file_path)).lower()
+        for pl_name, pl_conf in load_all_playlist_settings().items():
+            if isinstance(pl_conf, dict):
+                for key in ("playlist_file_path", "playlist_file", "playlist_path"):
+                    custom = pl_conf.get(key)
+                    if custom and os.path.normpath(os.path.abspath(custom)).lower() == norm:
+                        return pl_name
+    except Exception:
+        pass
     return os.path.splitext(os.path.basename(file_path))[0]
 
 
@@ -279,8 +332,7 @@ def resolve_target_playlist(target_name=None, playlist_data=None, allow_prompt=F
     if candidate_keys is None:
         existing_file_playlists = [
             k for k in playlists.keys()
-            if os.path.isfile(os.path.join(PLAYLISTS_DIR, f"{k}.txt")) or
-               os.path.isfile(os.path.join(PLAYLISTS_DIR, f"{sanitize_filename(k)}.txt"))
+            if os.path.isfile(get_playlist_file_path(k))
         ]
         candidate_keys = existing_file_playlists if (existing_file_playlists and command_name != "pull") else list(playlists.keys())
 

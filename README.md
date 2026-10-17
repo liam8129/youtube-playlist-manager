@@ -269,6 +269,7 @@ These settings apply to individual playlists under their alias header (e.g. `["M
 | `m3u8_mode` | `"all"` | Which `.m3u8` playlists to create: `"all"` (main + section playlists, default), `"main_only"`, or `"sections_only"` - see [`m3u8_mode` explained](#m3u8_mode-explained). |
 | `allow_duplicates` | `true` | When `false`, `format` purges duplicate video IDs, keeping the first occurrence. (Can also force via `format --dedup`). |
 | `playlist_entry_format` | `"%(id)s \| %(title)s"` | How each track line is written in the playlist file. Supported fields: `%(id)s`, `%(title)s`, `%(channel)s`, `%(duration)s`. Shorthand like `"id, title"` also works. Run `pull` after changing this. |
+| `playlist_file_path` | `""` | Custom path to this playlist's `.txt` file (can be a full file path or directory). Leave blank to use `playlists/<name>.txt`. |
 | `download_path` | `""` | Custom absolute path for downloads. Leave blank to use `<downloads_dir>/<playlist name>`. |
 | `folder_name_source` | `"alias"` | Which name to use for the download folder when `download_path` is blank: `"alias"` = playlist key, `"header"` = title from the `##` header in the playlist file. |
 | `atomic_writes` | `true` | Write playlist files atomically (safe, default). `false` is slightly faster but can corrupt the file if interrupted. |
