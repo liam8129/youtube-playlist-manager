@@ -184,6 +184,7 @@ def _list_playlist_settings(playlist_name, pl_settings):
         ("m3u8_mode", "M3U8 mode: main_only, all (with sections), sections_only"),
         ("allow_duplicates", "Allow duplicate tracks (false = format dedups)"),
         ("playlist_entry_format", "Format line structure (%(id)s | %(title)s)"),
+        ("playlist_file_path", "Custom path to playlist .txt file (blank = default)"),
         ("download_path", "Custom download folder (blank = default)"),
         ("folder_name_source", "Folder name in 'all' mode: alias or header"),
         ("atomic_writes", "Safe atomic writes (true) or direct writes"),
@@ -232,6 +233,8 @@ def command_config(args, settings, playlist_data):
         norm_key = key.strip().lower()
         if norm_key == "format":
             norm_key = "download-format"
+        elif norm_key in ("playlist_path", "playlist_file"):
+            norm_key = "playlist_file_path"
 
         # View single playlist setting
         if value is None and not unset:

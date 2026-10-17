@@ -129,6 +129,7 @@ DEFAULT_PLAYLIST_SETTINGS = {
     "m3u8_mode": "all",  # Which .m3u8 files to generate: "all" (main + sections, default), "main_only", "sections_only"
     "allow_duplicates": True,  # Allow duplicate video IDs in playlist (if false, 'format' purges duplicates)
     "playlist_entry_format": DEFAULT_PLAYLIST_ENTRY_FORMAT,
+    "playlist_file_path": "",  # Custom path to the playlist .txt file (blank = default playlists/<playlist>.txt)
     "download_path": "",  # Custom download path (blank = default downloads_dir/<playlist>)
     "folder_name_source": "alias",  # Base name for the full playlist download folder (appends " (Full)"): "alias" = playlist's own name; "header" = the title from the "### " header
     "atomic_writes": True,  # Set to false for direct writes to playlist.txt
@@ -543,6 +544,7 @@ def _format_playlist_settings_toml(all_settings):
             entry.get("playlist_entry_format", DEFAULT_PLAYLIST_SETTINGS["playlist_entry_format"])
         )
         dl_path = entry.get("download_path", "")
+        pl_file = entry.get("playlist_file_path", entry.get("playlist_file", entry.get("playlist_path", ""))) or ""
         folder_src = entry.get("folder_name_source", DEFAULT_PLAYLIST_SETTINGS["folder_name_source"])
         atomic_w = "true" if entry.get("atomic_writes", DEFAULT_PLAYLIST_SETTINGS["atomic_writes"]) else "false"
         num_sec_f = "true" if entry.get("number_section_folders", DEFAULT_PLAYLIST_SETTINGS["number_section_folders"]) else "false"
@@ -567,6 +569,7 @@ def _format_playlist_settings_toml(all_settings):
         # These are always written (even at their default) so they're visible and
         # editable in the file - previously they were hidden unless already
         # non-default, which made them look unsupported.
+        lines.append(f'playlist_file_path = "{pl_file}"')
         lines.append(f'download_path = "{dl_path}"')
         lines.append(f'folder_name_source = "{folder_src}"')
         lines.append(f'atomic_writes = {atomic_w}')
@@ -588,7 +591,8 @@ def _format_playlist_settings_toml(all_settings):
         known_written_keys = (
             "format", "download-format", "embed_thumbnail", "number_files", "push_mode",
             "download_mode", "pull_mode", "generate_m3u8", "m3u8_mode", "allow_duplicates",
-            "playlist_entry_format", "download_path", "folder_name_source",
+            "playlist_entry_format", "playlist_file_path", "playlist_file", "playlist_path",
+            "download_path", "folder_name_source",
             "atomic_writes", "number_section_folders", "oauth_client", "account",
             "include_playlist_name_in_sections", "ai_prompt", "cookies_file", "cookies_from_browser",
             "ytdlp_player_client",

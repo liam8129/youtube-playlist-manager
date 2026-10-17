@@ -31,6 +31,7 @@ from .parser import (
     resolve_playlist_id,
     parse_playlist_file,
     save_playlist_file,
+    get_playlist_file_path,
 )
 from .config import playlist_entry_format_fields
 
@@ -2136,8 +2137,8 @@ def command_download(args, settings, playlist_data, fmt=None):
 
     target_name = args.target.strip()
     playlist_name = get_playlist_name_for_target(target_name, playlist_data)
-    safe_name = sanitize_filename(playlist_name)
-    file_path = os.path.join(PLAYLISTS_DIR, f"{safe_name}.txt")
+    pl_settings = load_playlist_settings(playlist_name)
+    file_path = get_playlist_file_path(playlist_name, pl_settings)
 
     if not os.path.exists(file_path):
         print(f"[!] Error: Local file '{file_path}' does not exist.")

@@ -26,6 +26,7 @@ from .parser import (
     parse_playlist_file,
     save_playlist_file,
     playlist_link_format_issue,
+    get_playlist_file_path,
 )
 from .sync import compute_minimal_moves
 
@@ -202,8 +203,10 @@ def command_link(args, settings, playlist_data):
         save_playlist_data(playlist_data)
 
     # Create initial playlist file with main header
-    os.makedirs(PLAYLISTS_DIR, exist_ok=True)
-    file_path = os.path.join(PLAYLISTS_DIR, f"{playlist_name}.txt")
+    file_path = get_playlist_file_path(playlist_name)
+    parent_dir = os.path.dirname(os.path.abspath(file_path))
+    if parent_dir:
+        os.makedirs(parent_dir, exist_ok=True)
     if not os.path.exists(file_path):
         try:
             with open(file_path, "w", encoding="utf-8") as f:
@@ -299,8 +302,7 @@ def command_list(args, settings, playlist_data):
         else:
             last_info = "  (no CLI edits yet)"
 
-        safe_n = sanitize_filename(name)
-        fpath = os.path.join(PLAYLISTS_DIR, f"{safe_n}.txt")
+        fpath = get_playlist_file_path(name)
         sec_info = ""
         if os.path.isfile(fpath):
             try:
@@ -415,8 +417,10 @@ def command_pull(args, settings, playlist_data):
     pl_settings = load_playlist_settings(playlist_name)
     entry_fields = playlist_entry_format_fields(pl_settings.get("playlist_entry_format"))
 
-    os.makedirs(PLAYLISTS_DIR, exist_ok=True)
-    file_path = os.path.join(PLAYLISTS_DIR, f"{safe_name}.txt")
+    file_path = get_playlist_file_path(playlist_name, pl_settings)
+    parent_dir = os.path.dirname(os.path.abspath(file_path))
+    if parent_dir:
+        os.makedirs(parent_dir, exist_ok=True)
 
     # Check if local file already exists to preserve custom blank line spacing, sections, and compute diff
     existing_blank_above = set()
@@ -1067,8 +1071,8 @@ def command_push(args, settings, playlist_data):
     target_name = args.target.strip()
     playlist_id = resolve_playlist_id(target_name, playlist_data)
     playlist_name = get_playlist_name_for_target(target_name, playlist_data)
-    safe_name = sanitize_filename(playlist_name)
-    file_path = os.path.join(PLAYLISTS_DIR, f"{safe_name}.txt")
+    pl_settings = load_playlist_settings(playlist_name)
+    file_path = get_playlist_file_path(playlist_name, pl_settings)
 
     if not os.path.exists(file_path):
         print(f"[!] Error: Local file '{file_path}' does not exist.")
@@ -1215,14 +1219,13 @@ def command_format(args, settings, playlist_data):
 
     target_name = args.target.strip()
     playlist_name = get_playlist_name_for_target(target_name, playlist_data)
-    safe_name = sanitize_filename(playlist_name)
-    file_path = os.path.join(PLAYLISTS_DIR, f"{safe_name}.txt")
+    pl_settings = load_playlist_settings(playlist_name)
+    file_path = get_playlist_file_path(playlist_name, pl_settings)
 
     if not os.path.exists(file_path):
         print(f"[!] Error: Local file '{file_path}' does not exist.")
         return
 
-    pl_settings = load_playlist_settings(playlist_name)
     entry_format = pl_settings.get("playlist_entry_format")
     entry_fields = playlist_entry_format_fields(entry_format)
 
